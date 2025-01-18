@@ -1,7 +1,9 @@
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error, r2_score
 from datetime import datetime, timedelta
 import pickle
+import matplotlib.pyplot as plt
 
 class PredictiveMaintenanceModel:
     """
@@ -53,3 +55,42 @@ class PredictiveMaintenanceModel:
             "next_date": next_date.strftime("%Y-%m-%d"),
             "risk_score": round(risk_score, 2)
         }
+
+    def evaluate(self, X_test: np.ndarray, y_test: np.ndarray):
+        """
+        Evaluate the model's performance on test data.
+
+        Args:
+            X_test (np.ndarray): Test features.
+            y_test (np.ndarray): Test labels (days to maintenance).
+
+        Returns:
+            dict: Evaluation metrics (MAE and R2 score).
+        """
+        predictions = self.model.predict(X_test)
+        mae = mean_absolute_error(y_test, predictions)
+        r2 = r2_score(y_test, predictions)
+        return {
+            "mean_absolute_error": round(mae, 2),
+            "r2_score": round(r2, 2)
+        }
+
+    def plot_feature_importance(self, feature_names: list):
+        """
+        Plot the importance of each feature used in the model.
+
+        Args:
+            feature_names (list): List of feature names.
+        """
+        importances = self.model.feature_importances_
+        indices = np.argsort(importances)[::-1]
+
+        # Plot feature importance
+        plt.figure(figsize=(10, 6))
+        plt.title("Feature Importance")
+        plt.bar(range(len(feature_names)), importances[indices], align="center")
+        plt.xticks(range(len(feature_names)), [feature_names[i] for i in indices], rotation=90)
+        plt.xlabel("Feature")
+        plt.ylabel("Importance")
+        plt.tight_layout()
+        plt.show()
