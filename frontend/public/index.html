@@ -13,6 +13,13 @@
     
     <!-- Scripts -->
     <script defer src="main.js"></script>
+    <!-- Analytics Integration -->
+    <script async src="https://www.google-analytics.com/analytics.js"></script>
+    <script>
+        window.ga = window.ga || function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+        ga('create', 'UA-XXXXX-Y', 'auto');
+        ga('send', 'pageview');
+    </script>
 </head>
 <body>
     <header>
@@ -28,6 +35,11 @@
                 <li><a href="#defect-detection">Defect Detection</a></li>
                 <li><a href="#settings">Settings</a></li>
             </ul>
+            <!-- Dark Mode Toggle -->
+            <div class="dark-mode-toggle">
+                <label for="dark-mode">Dark Mode</label>
+                <input type="checkbox" id="dark-mode" onchange="toggleDarkMode()">
+            </div>
         </nav>
     </header>
     
@@ -72,5 +84,20 @@
         <p>&copy; 2025 AI-Powered Quality Control. All rights reserved.</p>
         <p>Developed for the Indian manufacturing sector to foster quality and sustainability.</p>
     </footer>
+
+    <script>
+        // Dark Mode Toggle Functionality
+        function toggleDarkMode() {
+            const body = document.body;
+            body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', body.classList.contains('dark-mode') ? 'enabled' : 'disabled');
+        }
+
+        // Apply dark mode preference on page load
+        if (localStorage.getItem('darkMode') === 'enabled') {
+            document.body.classList.add('dark-mode');
+            document.getElementById('dark-mode').checked = true;
+        }
+    </script>
 </body>
 </html>
