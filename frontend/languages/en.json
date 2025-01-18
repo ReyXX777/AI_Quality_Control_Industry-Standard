@@ -9,7 +9,8 @@
     "quality_standards": "Quality Standards",
     "maintenance": "Maintenance",
     "defect_detection": "Defect Detection",
-    "settings": "Settings"
+    "settings": "Settings",
+    "notifications": "Notifications"
   },
   "quality_standards": {
     "title": "Quality Standards Management",
@@ -60,5 +61,19 @@
     "success": "Operation completed successfully.",
     "failure": "Operation failed. Please try again.",
     "delete_confirm": "Are you sure you want to delete this item?"
+  },
+  "user_roles": {
+    "admin": "Administrator",
+    "manager": "Manager",
+    "operator": "Operator",
+    "viewer": "Viewer"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "new_message": "You have a new message.",
+    "maintenance_alert": "Maintenance required for equipment {equipment_id}.",
+    "defect_alert": "Defect detected in product {product_id}.",
+    "mark_as_read": "Mark as Read",
+    "clear_all": "Clear All"
   }
 }
