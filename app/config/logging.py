@@ -1,6 +1,11 @@
+
 import logging
 import os
 from logging.handlers import RotatingFileHandler
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import json
 
 # Create logs directory if it doesn't exist
 LOG_DIR = "logs"
@@ -29,3 +34,54 @@ logging.basicConfig(
 # Function to get a logger for a specific module
 def get_logger(name: str) -> logging.Logger:
     return logging.getLogger(name)
+
+# Email notification component
+def send_email_notification(subject: str, body: str, to_email: str):
+    try:
+        # Load email configuration
+        with open('config.json', 'r') as config_file:
+            config = json.load(config_file)
+        
+        from_email = config['email']['from_email']
+        smtp_server = config['email']['smtp_server']
+        smtp_port = config['email']['smtp_port']
+        smtp_username = config['email']['smtp_username']
+        smtp_password = config['email']['smtp_password']
+
+        # Create the email
+        msg = MIMEMultipart()
+        msg['From'] = from_email
+        msg['To'] = to_email
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body, 'plain'))
+
+        # Send the email
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_username, smtp_password)
+            server.send_message(msg)
+        
+        logger = get_logger(__name__)
+        logger.info(f"Email notification sent to {to_email}")
+
+    except Exception as e:
+        logger = get_logger(__name__)
+        logger.error(f"Failed to send email notification: {e}")
+
+# Configuration management component
+def load_configuration(config_file: str) -> dict:
+    try:
+        with open(config_file, 'r') as file:
+            config = json.load(file)
+        logger = get_logger(__name__)
+        logger.info("Configuration loaded successfully")
+        return config
+    except Exception as e:
+        logger = get_logger(__name__)
+        logger.error(f"Failed to load configuration: {e}")
+        return {}
+
+# Example usage
+if __name__ == "__main__":
+    config = load_configuration('config.json')
+    send_email_notification("Test Subject", "This is a test email body.", "recipient@example.com")
