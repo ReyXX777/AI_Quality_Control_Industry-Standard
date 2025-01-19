@@ -2,6 +2,7 @@ import streamlit as st
 from PIL import Image
 import requests
 import io
+import datetime
 
 # Set page title
 st.set_page_config(page_title="AI-Powered Quality Control", layout="wide")
@@ -34,7 +35,7 @@ if not st.session_state.authenticated:
     st.stop()
 
 # Navigation
-nav = st.sidebar.radio("Navigation", ["Home", "Defect Detection", "Maintenance Prediction", "Quality Standards", "Feedback"])
+nav = st.sidebar.radio("Navigation", ["Home", "Defect Detection", "Maintenance Prediction", "Quality Standards", "Feedback", "Analytics"])
 
 # Home Page
 if nav == "Home":
@@ -86,6 +87,17 @@ elif nav == "Feedback":
     feedback = st.text_area("Share your feedback or report issues:")
     if st.button("Submit Feedback"):
         st.success("Thank you for your feedback! We will review it shortly.")
+
+# Analytics Dashboard Component
+elif nav == "Analytics":
+    st.header("Analytics Dashboard")
+    st.write("View key metrics and insights for quality control and maintenance.")
+    st.subheader("Defect Rate Over Time")
+    st.line_chart({"Defect Rate": [10, 8, 6, 5, 4, 3, 2]})
+    st.subheader("Maintenance Cost Breakdown")
+    st.bar_chart({"Cost": [5000, 3000, 2000, 1500, 1000]})
+    st.subheader("Equipment Uptime")
+    st.metric("Uptime Percentage", "98.5%", "+1.2%")
 
 # Footer
 st.markdown("""
