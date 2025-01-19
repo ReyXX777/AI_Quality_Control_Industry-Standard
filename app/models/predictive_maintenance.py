@@ -4,6 +4,11 @@ from sklearn.metrics import mean_absolute_error, r2_score
 from datetime import datetime, timedelta
 import pickle
 import matplotlib.pyplot as plt
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class PredictiveMaintenanceModel:
     """
@@ -17,8 +22,9 @@ class PredictiveMaintenanceModel:
         try:
             with open("models/maintenance_model.pkl", "rb") as f:
                 self.model = pickle.load(f)
+            logger.info("Pre-trained model loaded successfully.")
         except FileNotFoundError:
-            print("Pre-trained model not found. Using an untrained model.")
+            logger.warning("Pre-trained model not found. Using an untrained model.")
 
     def train(self, X_train: np.ndarray, y_train: np.ndarray):
         """
@@ -31,6 +37,7 @@ class PredictiveMaintenanceModel:
         self.model.fit(X_train, y_train)
         with open("models/maintenance_model.pkl", "wb") as f:
             pickle.dump(self.model, f)
+        logger.info("Model trained and saved successfully.")
 
     def predict(self, data: np.ndarray):
         """
@@ -51,6 +58,7 @@ class PredictiveMaintenanceModel:
         # Determine next maintenance date
         next_date = datetime.now() + timedelta(days=int(days_to_maintenance))
 
+        logger.info(f"Prediction made: Next maintenance on {next_date.strftime('%Y-%m-%d')}, Risk Score: {risk_score:.2f}")
         return {
             "next_date": next_date.strftime("%Y-%m-%d"),
             "risk_score": round(risk_score, 2)
@@ -70,6 +78,7 @@ class PredictiveMaintenanceModel:
         predictions = self.model.predict(X_test)
         mae = mean_absolute_error(y_test, predictions)
         r2 = r2_score(y_test, predictions)
+        logger.info(f"Model evaluation: MAE = {mae:.2f}, R2 Score = {r2:.2f}")
         return {
             "mean_absolute_error": round(mae, 2),
             "r2_score": round(r2, 2)
@@ -94,3 +103,62 @@ class PredictiveMaintenanceModel:
         plt.ylabel("Importance")
         plt.tight_layout()
         plt.show()
+        logger.info("Feature importance plot generated.")
+
+# Data Preprocessing Component
+class DataPreprocessor:
+    """
+    Component for preprocessing data before training or prediction.
+    """
+    def __init__(self):
+        self.scaler = None
+
+    def normalize(self, data: np.ndarray):
+        """
+        Normalize the data to have zero mean and unit variance.
+
+        Args:
+            data (np.ndarray): Input data to normalize.
+
+        Returns:
+            np.ndarray: Normalized data.
+        """
+        mean = np.mean(data, axis=0)
+        std = np.std(data, axis=0)
+        normalized_data = (data - mean) / std
+        logger.info("Data normalized successfully.")
+        return normalized_data
+
+# Model Persistence Component
+class ModelPersistence:
+    """
+    Component for saving and loading models to/from disk.
+    """
+    @staticmethod
+    def save_model(model, path: str):
+        """
+        Save the model to a specified path.
+
+        Args:
+            model: Trained model to save.
+            path (str): Path to save the model.
+        """
+        with open(path, "wb") as f:
+            pickle.dump(model, f)
+        logger.info(f"Model saved to {path}")
+
+    @staticmethod
+    def load_model(path: str):
+        """
+        Load the model from a specified path.
+
+        Args:
+            path (str): Path to load the model from.
+
+        Returns:
+            Loaded model.
+        """
+        with open(path, "rb") as f:
+            model = pickle.load(f)
+        logger.info(f"Model loaded from {path}")
+        return model
