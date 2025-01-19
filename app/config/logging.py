@@ -1,4 +1,3 @@
-
 import logging
 import os
 from logging.handlers import RotatingFileHandler
@@ -6,6 +5,8 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import json
+import requests
+from datetime import datetime
 
 # Create logs directory if it doesn't exist
 LOG_DIR = "logs"
@@ -81,7 +82,38 @@ def load_configuration(config_file: str) -> dict:
         logger.error(f"Failed to load configuration: {e}")
         return {}
 
+# Weather API component
+def get_weather(city: str, api_key: str) -> dict:
+    try:
+        url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}"
+        response = requests.get(url)
+        response.raise_for_status()
+        weather_data = response.json()
+        logger = get_logger(__name__)
+        logger.info(f"Weather data fetched for {city}")
+        return weather_data
+    except Exception as e:
+        logger = get_logger(__name__)
+        logger.error(f"Failed to fetch weather data: {e}")
+        return {}
+
+# Time-based greeting component
+def get_greeting() -> str:
+    current_hour = datetime.now().hour
+    if 5 <= current_hour < 12:
+        return "Good morning"
+    elif 12 <= current_hour < 18:
+        return "Good afternoon"
+    else:
+        return "Good evening"
+
 # Example usage
 if __name__ == "__main__":
     config = load_configuration('config.json')
     send_email_notification("Test Subject", "This is a test email body.", "recipient@example.com")
+    
+    weather_data = get_weather("London", config['weather_api_key'])
+    print(f"Weather in London: {weather_data['weather'][0]['description']}")
+    
+    greeting = get_greeting()
+    print(f"{greeting}! Have a great day.")
