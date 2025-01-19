@@ -3,6 +3,11 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
 from typing import Callable, Optional
 from datetime import datetime, timedelta
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Secret key for JWT decoding (use environment variables in production)
 SECRET_KEY = "your_secret_key"
@@ -40,6 +45,42 @@ def refresh_token(user_data: dict) -> str:
     user_data.update({"exp": expiration})
     return jwt.encode(user_data, SECRET_KEY, algorithm=ALGORITHM)
 
+# Token blacklist component
+TOKEN_BLACKLIST = set()
+
+def is_token_blacklisted(token: str) -> bool:
+    """
+    Check if the token is blacklisted.
+
+    Args:
+        token (str): The JWT token to check.
+
+    Returns:
+        bool: True if the token is blacklisted, otherwise False.
+    """
+    return token in TOKEN_BLACKLIST
+
+def add_token_to_blacklist(token: str):
+    """
+    Add a token to the blacklist.
+
+    Args:
+        token (str): The JWT token to blacklist.
+    """
+    TOKEN_BLACKLIST.add(token)
+    logger.info(f"Token blacklisted: {token}")
+
+# Logging component for authentication events
+def log_authentication_event(user_data: dict, event_type: str):
+    """
+    Log authentication-related events.
+
+    Args:
+        user_data (dict): Decoded token data containing user details.
+        event_type (str): The type of event (e.g., "login", "token_refresh").
+    """
+    logger.info(f"Authentication Event - {event_type}: User {user_data.get('username')}")
+
 async def authenticate_user(credentials: HTTPAuthorizationCredentials):
     """
     Validate JWT token and extract user information.
@@ -51,8 +92,13 @@ async def authenticate_user(credentials: HTTPAuthorizationCredentials):
         dict: Decoded token data containing user details.
     """
     try:
+        # Check if the token is blacklisted
+        if is_token_blacklisted(credentials.credentials):
+            raise HTTPException(status_code=401, detail="Token is blacklisted")
+
         # Decode the JWT token
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        log_authentication_event(payload, "login")
         return payload
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token has expired")
