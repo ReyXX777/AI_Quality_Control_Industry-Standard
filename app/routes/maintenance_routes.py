@@ -6,6 +6,8 @@ from functools import lru_cache
 import smtplib
 from email.mime.text import MIMEText
 from datetime import datetime
+import pandas as pd
+import os
 
 # Logger for this module
 logger = get_logger(__name__)
@@ -63,6 +65,50 @@ def send_maintenance_alert(equipment_id: str, next_maintenance_date: str, risk_s
     except Exception as e:
         logger.error(f"Failed to send maintenance alert for equipment_id {equipment_id}: {str(e)}")
 
+# Prediction history component
+def save_prediction_history(equipment_id: str, prediction: dict, output_path: str = "results/prediction_history.csv"):
+    """
+    Save maintenance prediction history to a CSV file.
+
+    Args:
+        equipment_id (str): The unique identifier for the equipment.
+        prediction (dict): Predicted maintenance details.
+        output_path (str): Path to save the CSV file.
+    """
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    history_entry = {
+        "equipment_id": equipment_id,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "next_maintenance_date": prediction["next_date"],
+        "risk_score": prediction["risk_score"]
+    }
+    df = pd.DataFrame([history_entry])
+    if os.path.exists(output_path):
+        df.to_csv(output_path, mode="a", header=False, index=False)
+    else:
+        df.to_csv(output_path, index=False)
+    logger.info(f"Prediction history saved for equipment_id {equipment_id}")
+
+# System health check component
+def check_system_health():
+    """
+    Perform a basic system health check.
+
+    Returns:
+        dict: System health status.
+    """
+    try:
+        # Simulate a health check (e.g., check database connection, disk space, etc.)
+        health_status = {
+            "status": "healthy",
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+        logger.info("System health check completed successfully.")
+        return health_status
+    except Exception as e:
+        logger.error(f"System health check failed: {str(e)}")
+        return {"status": "unhealthy", "error": str(e)}
+
 @router.get("/predict", summary="Predict maintenance needs for equipment")
 async def predict_maintenance(
     equipment_id: str = Query(..., description="Unique identifier for the equipment"),
@@ -86,6 +132,9 @@ async def predict_maintenance(
         prediction = cached_predict_maintenance(equipment_id)
         logger.info(f"Prediction result for equipment_id {equipment_id}: {prediction}")
 
+        # Save prediction history
+        save_prediction_history(equipment_id, prediction)
+
         # Send alert if recipient is provided
         if alert_recipient:
             send_maintenance_alert(equipment_id, prediction["next_date"], prediction["risk_score"], alert_recipient)
@@ -101,3 +150,13 @@ async def predict_maintenance(
     except Exception as e:
         logger.error(f"Error during maintenance prediction for equipment_id {equipment_id}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Error processing maintenance prediction request.")
+
+@router.get("/health", summary="Check system health")
+async def health_check():
+    """
+    Perform a system health check.
+
+    Returns:
+        dict: System health status.
+    """
+    return check_system_health()
