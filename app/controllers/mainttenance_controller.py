@@ -5,9 +5,14 @@ from datetime import datetime
 import smtplib
 from email.mime.text import MIMEText
 from functools import lru_cache
+import logging
 
 router = APIRouter()
 model = PredictiveMaintenanceModel()
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Data caching component
 @lru_cache(maxsize=100)
@@ -39,8 +44,27 @@ def send_maintenance_alert(equipment_id: str, next_maintenance_date: str, risk_s
             server.starttls()
             server.login("user@example.com", "password")
             server.sendmail("noreply@maintenance.com", recipient, msg.as_string())
+        logger.info(f"Maintenance alert sent to {recipient}")
     except Exception as e:
+        logger.error(f"Failed to send email alert: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to send email alert: {str(e)}")
+
+# Logging component for predictions
+def log_prediction(equipment_id: str, next_maintenance_date: str, risk_score: float):
+    """
+    Log the prediction details for auditing and monitoring.
+    """
+    logger.info(
+        f"Prediction for Equipment {equipment_id}: "
+        f"Next Maintenance Date: {next_maintenance_date}, Risk Score: {risk_score}"
+    )
+
+# Notification component for system alerts
+def send_system_notification(message: str):
+    """
+    Send a system-wide notification for critical events.
+    """
+    logger.warning(f"System Notification: {message}")
 
 @router.get("/predict")
 async def predict_maintenance(equipment_id: str, alert_recipient: str = None):
@@ -68,10 +92,20 @@ async def predict_maintenance(equipment_id: str, alert_recipient: str = None):
             "risk_score": prediction["risk_score"],
         }
 
+        # Log the prediction
+        log_prediction(equipment_id, prediction["next_date"], prediction["risk_score"])
+
         # Send email alert if recipient is provided
         if alert_recipient:
             send_maintenance_alert(equipment_id, prediction["next_date"], prediction["risk_score"], alert_recipient)
 
+        # Send system notification for high-risk predictions
+        if prediction["risk_score"] > 0.8:
+            send_system_notification(
+                f"High-risk maintenance predicted for Equipment {equipment_id}. Risk Score: {prediction['risk_score']}"
+            )
+
         return result
     except Exception as e:
+        logger.error(f"Error predicting maintenance: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error predicting maintenance: {str(e)}")
