@@ -2,12 +2,17 @@ import os
 from pydantic import BaseModel, ValidationError
 import requests
 from typing import Optional
+import logging
 
 class Settings:
     DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./quality_control.db")
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
 settings = Settings()
+
+# Configure logging
+logging.basicConfig(level=settings.LOG_LEVEL)
+logger = logging.getLogger(__name__)
 
 # API Client component
 class APIClient:
@@ -40,6 +45,23 @@ def validate_user_data(data: dict):
     except ValidationError as e:
         raise ValueError(f"Invalid user data: {e}")
 
+# File Handling component
+def save_to_file(filename: str, data: str):
+    try:
+        with open(filename, "w") as file:
+            file.write(data)
+        logger.info(f"Data successfully saved to {filename}")
+    except Exception as e:
+        logger.error(f"Failed to save data to file: {e}")
+
+# Notification component
+def send_notification(message: str):
+    try:
+        # Simulate sending a notification (e.g., to a logging system or external service)
+        logger.info(f"Notification sent: {message}")
+    except Exception as e:
+        logger.error(f"Failed to send notification: {e}")
+
 # Example usage
 if __name__ == "__main__":
     api_client = APIClient(base_url="https://api.example.com")
@@ -55,7 +77,13 @@ if __name__ == "__main__":
         print("User data is valid:", validated_data)
         response = api_client.post("users", data=validated_data.dict())
         print("API response:", response)
+
+        # Save API response to a file
+        save_to_file("user_response.txt", str(response))
+
+        # Send a notification
+        send_notification("User data processed successfully")
     except ValueError as e:
-        print(e)
+        logger.error(e)
     except requests.exceptions.RequestException as e:
-        print(f"API request failed: {e}")
+        logger.error(f"API request failed: {e}")
