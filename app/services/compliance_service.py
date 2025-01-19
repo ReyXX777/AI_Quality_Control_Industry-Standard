@@ -4,6 +4,7 @@ from typing import Optional, Dict, List
 from config.logging import get_logger
 import json
 import os
+import uuid
 
 # Logger for this module
 logger = get_logger(__name__)
@@ -60,7 +61,7 @@ class ComplianceService:
         Returns:
             ComplianceCheck: The created compliance check.
         """
-        check.check_id = f"check_{len(self.compliance_checks) + 1}"
+        check.check_id = str(uuid.uuid4())  # Generate a unique ID
         self.compliance_checks.append(check)
         self._save_compliance_checks()
         return check
@@ -108,6 +109,43 @@ class ComplianceService:
 # Initialize service
 compliance_service = ComplianceService()
 
+# Audit Logging Component
+def log_audit_event(event_type: str, event_details: Dict):
+    """
+    Log audit events for compliance checks.
+
+    Args:
+        event_type (str): Type of event (e.g., "create", "update", "delete").
+        event_details (Dict): Details of the event.
+    """
+    try:
+        os.makedirs("logs/audit", exist_ok=True)
+        log_entry = {
+            "timestamp": str(datetime.now()),
+            "event_type": event_type,
+            "event_details": event_details
+        }
+        with open("logs/audit/compliance_audit.log", "a") as log_file:
+            log_file.write(json.dumps(log_entry) + "\n")
+        logger.info(f"Audit event logged: {event_type}")
+    except Exception as e:
+        logger.error(f"Error logging audit event: {str(e)}", exc_info=True)
+
+# Notification Component
+def send_notification(message: str, recipient: str):
+    """
+    Send a notification (e.g., email or system alert).
+
+    Args:
+        message (str): Notification message.
+        recipient (str): Recipient of the notification.
+    """
+    try:
+        # Simulate sending a notification
+        logger.info(f"Notification sent to {recipient}: {message}")
+    except Exception as e:
+        logger.error(f"Error sending notification: {str(e)}", exc_info=True)
+
 @router.post("/compliance/create", summary="Create a new compliance check")
 async def create_compliance_check(check: ComplianceCheck):
     """
@@ -122,6 +160,8 @@ async def create_compliance_check(check: ComplianceCheck):
     try:
         logger.info(f"Creating compliance check: {check}")
         result = compliance_service.create_compliance_check(check)
+        log_audit_event("create", {"check_id": result.check_id, "name": result.name})
+        send_notification(f"New compliance check created: {result.name}", "admin@example.com")
         return {"message": "Compliance check created successfully", "data": result}
     except Exception as e:
         logger.error(f"Error creating compliance check: {str(e)}", exc_info=True)
@@ -158,6 +198,8 @@ async def update_compliance_check(check_id: str, check: ComplianceCheck):
     try:
         logger.info(f"Updating compliance check {check_id} with data: {check}")
         result = compliance_service.update_compliance_check(check_id, check)
+        log_audit_event("update", {"check_id": check_id, "updated_data": check.dict()})
+        send_notification(f"Compliance check updated: {check.name}", "admin@example.com")
         return {"message": "Compliance check updated successfully", "data": result}
     except HTTPException as e:
         raise e
@@ -179,6 +221,8 @@ async def delete_compliance_check(check_id: str):
     try:
         logger.info(f"Deleting compliance check with ID: {check_id}")
         compliance_service.delete_compliance_check(check_id)
+        log_audit_event("delete", {"check_id": check_id})
+        send_notification(f"Compliance check deleted: {check_id}", "admin@example.com")
         return {"message": "Compliance check deleted successfully"}
     except Exception as e:
         logger.error(f"Error deleting compliance check {check_id}: {str(e)}", exc_info=True)
