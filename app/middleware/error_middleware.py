@@ -70,3 +70,39 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
         # Process the request if within the rate limit
         response = await call_next(request)
         return response
+
+# Request ID Middleware
+class RequestIDMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware to add a unique request ID to each request for tracking purposes.
+    """
+
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        import uuid
+        request_id = str(uuid.uuid4())
+        request.state.request_id = request_id
+        logger.info(f"Request ID: {request_id} - {request.method} {request.url}")
+
+        # Process the request
+        response = await call_next(request)
+
+        # Add the request ID to the response headers
+        response.headers["X-Request-ID"] = request_id
+        return response
+
+# Security Headers Middleware
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware to add security headers to all responses.
+    """
+
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        # Process the request
+        response = await call_next(request)
+
+        # Add security headers
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
