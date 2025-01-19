@@ -3,6 +3,8 @@ from typing import Optional, Dict, List
 import json
 import os
 from config.logging import get_logger
+import uuid
+from datetime import datetime
 
 # Logger for this module
 logger = get_logger(__name__)
@@ -55,9 +57,10 @@ class QualityService:
         Returns:
             QualityStandard: The created quality standard.
         """
-        standard.standard_id = f"standard_{len(self.quality_standards) + 1}"
+        standard.standard_id = str(uuid.uuid4())  # Generate a unique ID
         self.quality_standards.append(standard)
         self._save_quality_standards()
+        logger.info(f"Quality standard created: {standard.name}")
         return standard
 
     def get_all_standards(self) -> List[QualityStandard]:
@@ -86,6 +89,7 @@ class QualityService:
                 standard.description = updated_standard.description
                 standard.threshold = updated_standard.threshold
                 self._save_quality_standards()
+                logger.info(f"Quality standard updated: {standard_id}")
                 return standard
         raise ValueError("Quality standard not found")
 
@@ -98,6 +102,44 @@ class QualityService:
         """
         self.quality_standards = [standard for standard in self.quality_standards if standard.standard_id != standard_id]
         self._save_quality_standards()
+        logger.info(f"Quality standard deleted: {standard_id}")
+
+# Audit Logging Component
+def log_audit_event(event_type: str, event_details: Dict):
+    """
+    Log audit events for quality standards.
+
+    Args:
+        event_type (str): Type of event (e.g., "create", "update", "delete").
+        event_details (Dict): Details of the event.
+    """
+    try:
+        os.makedirs("logs/audit", exist_ok=True)
+        log_entry = {
+            "timestamp": str(datetime.now()),
+            "event_type": event_type,
+            "event_details": event_details
+        }
+        with open("logs/audit/quality_audit.log", "a") as log_file:
+            log_file.write(json.dumps(log_entry) + "\n")
+        logger.info(f"Audit event logged: {event_type}")
+    except Exception as e:
+        logger.error(f"Error logging audit event: {str(e)}", exc_info=True)
+
+# Notification Component
+def send_notification(message: str, recipient: str):
+    """
+    Send a notification (e.g., email or system alert).
+
+    Args:
+        message (str): Notification message.
+        recipient (str): Recipient of the notification.
+    """
+    try:
+        # Simulate sending a notification
+        logger.info(f"Notification sent to {recipient}: {message}")
+    except Exception as e:
+        logger.error(f"Error sending notification: {str(e)}", exc_info=True)
 
 # Initialize service
 quality_service = QualityService()
