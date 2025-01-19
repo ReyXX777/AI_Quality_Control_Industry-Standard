@@ -34,6 +34,7 @@
                 <li><a href="#maintenance">Predictive Maintenance</a></li>
                 <li><a href="#defect-detection">Defect Detection</a></li>
                 <li><a href="#settings">Settings</a></li>
+                <li><a href="#feedback">Feedback</a></li>
             </ul>
             <!-- Dark Mode Toggle -->
             <div class="dark-mode-toggle">
@@ -78,6 +79,14 @@
             <p>Configure your preferences for the quality control system.</p>
             <button onclick="window.location.href='/settings'">Go to Settings</button>
         </section>
+
+        <!-- Feedback Section -->
+        <section id="feedback">
+            <h2>Feedback</h2>
+            <p>We value your feedback! Share your thoughts or report issues to help us improve.</p>
+            <textarea id="feedback-text" placeholder="Enter your feedback here..."></textarea>
+            <button onclick="submitFeedback()">Submit Feedback</button>
+        </section>
     </main>
 
     <footer>
@@ -97,6 +106,19 @@
         if (localStorage.getItem('darkMode') === 'enabled') {
             document.body.classList.add('dark-mode');
             document.getElementById('dark-mode').checked = true;
+        }
+
+        // Feedback Submission Functionality
+        function submitFeedback() {
+            const feedbackText = document.getElementById('feedback-text').value;
+            if (feedbackText.trim() === "") {
+                alert("Please enter your feedback before submitting.");
+                return;
+            }
+            // Simulate feedback submission (replace with actual API call)
+            console.log("Feedback submitted:", feedbackText);
+            alert("Thank you for your feedback!");
+            document.getElementById('feedback-text').value = ""; // Clear the textarea
         }
     </script>
 </body>
