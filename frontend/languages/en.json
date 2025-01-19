@@ -75,5 +75,20 @@
     "defect_alert": "Defect detected in product {product_id}.",
     "mark_as_read": "Mark as Read",
     "clear_all": "Clear All"
+  },
+  "analytics": {
+    "title": "Analytics",
+    "overview": "Overview",
+    "defect_rate": "Defect Rate",
+    "maintenance_cost": "Maintenance Cost",
+    "equipment_uptime": "Equipment Uptime",
+    "no_data": "No analytics data available."
+  },
+  "help": {
+    "title": "Help & Support",
+    "faq": "Frequently Asked Questions",
+    "contact": "Contact Support",
+    "documentation": "Documentation",
+    "feedback": "Provide Feedback"
   }
 }
