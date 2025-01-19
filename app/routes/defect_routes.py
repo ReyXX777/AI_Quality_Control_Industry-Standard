@@ -5,6 +5,7 @@ from config.logging import get_logger
 from typing import List
 import pandas as pd
 import os
+import shutil
 
 # Logger for this module
 logger = get_logger(__name__)
@@ -26,6 +27,32 @@ def save_results_to_csv(results: List[dict], output_path: str = "results/defect_
     df = pd.DataFrame(results)
     df.to_csv(output_path, index=False)
     logger.info(f"Results saved to {output_path}")
+
+# Image storage component
+def save_uploaded_images(files: List[UploadFile], directory: str = "uploads"):
+    """
+    Save uploaded images to a specified directory.
+
+    Args:
+        files (List[UploadFile]): List of uploaded image files.
+        directory (str): Directory to save the images.
+    """
+    os.makedirs(directory, exist_ok=True)
+    for file in files:
+        file_path = os.path.join(directory, file.filename)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        logger.info(f"Image saved to {file_path}")
+
+# Notification component
+def send_notification(message: str):
+    """
+    Send a notification (e.g., to a logging system or external service).
+
+    Args:
+        message (str): Notification message to send.
+    """
+    logger.info(f"Notification: {message}")
 
 @router.post("/detect", summary="Detect defects in an uploaded image")
 async def detect_defect(file: UploadFile = File(...)):
@@ -93,6 +120,12 @@ async def detect_defect_batch(files: List[UploadFile] = File(...)):
 
         # Save results to CSV
         save_results_to_csv(results)
+
+        # Save uploaded images
+        save_uploaded_images(files)
+
+        # Send notification
+        send_notification(f"Batch defect detection completed for {len(files)} files. Defects detected: {sum(result['defect_detected'] for result in results)}")
 
         return {
             "total_files": len(files),
