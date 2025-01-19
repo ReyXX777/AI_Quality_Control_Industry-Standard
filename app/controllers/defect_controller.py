@@ -3,6 +3,8 @@ from models.defect_detection import DefectDetectionModel
 from services.data_service import preprocess_image
 import logging
 from typing import List
+import shutil
+import os
 
 router = APIRouter()
 model = DefectDetectionModel()
@@ -23,6 +25,21 @@ def log_prediction(file_name: str, prediction: bool):
     """Log the prediction result for auditing purposes."""
     logger.info(f"File: {file_name}, Defect Detected: {prediction}")
 
+# File storage component
+def save_uploaded_file(file: UploadFile, directory: str = "uploads"):
+    """Save the uploaded file to a specified directory."""
+    os.makedirs(directory, exist_ok=True)
+    file_path = os.path.join(directory, file.filename)
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    logger.info(f"File saved to {file_path}")
+    return file_path
+
+# Notification component
+def send_notification(message: str):
+    """Send a notification (e.g., to a logging system or external service)."""
+    logger.info(f"Notification: {message}")
+
 @router.post("/detect")
 async def detect_defect(file: UploadFile):
     # Validate file type
@@ -30,6 +47,9 @@ async def detect_defect(file: UploadFile):
         raise HTTPException(status_code=400, detail="File type not allowed. Only JPEG, PNG, and JPG are supported.")
 
     try:
+        # Save the uploaded file
+        file_path = save_uploaded_file(file)
+
         # Preprocess and predict
         image_tensor = preprocess_image(await file.read())
         prediction = model.predict(image_tensor)
@@ -37,6 +57,9 @@ async def detect_defect(file: UploadFile):
 
         # Log the prediction
         log_prediction(file.filename, result)
+
+        # Send a notification
+        send_notification(f"Defect detection completed for {file.filename}. Result: {result}")
 
         return {"defect_detected": result}
     except Exception as e:
