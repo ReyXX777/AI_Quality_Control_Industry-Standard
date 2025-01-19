@@ -2,6 +2,11 @@ import torch
 from torchvision import models, transforms
 from torch.utils.data import DataLoader
 import os
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class DefectDetectionModel:
     def __init__(self):
@@ -26,7 +31,7 @@ class DefectDetectionModel:
         """
         os.makedirs(os.path.dirname(path), exist_ok=True)
         torch.save(self.model.state_dict(), path)
-        print(f"Model saved to {path}")
+        logger.info(f"Model saved to {path}")
 
     def load_model(self, path: str):
         """
@@ -37,7 +42,7 @@ class DefectDetectionModel:
         """
         if os.path.exists(path):
             self.model.load_state_dict(torch.load(path, map_location=self.device))
-            print(f"Model loaded from {path}")
+            logger.info(f"Model loaded from {path}")
         else:
             raise FileNotFoundError(f"No model found at {path}")
 
@@ -65,3 +70,66 @@ class DataAugmentation:
             Augmented image tensor.
         """
         return self.transform(image)
+
+# Model Evaluation Component
+class ModelEvaluator:
+    """
+    Component for evaluating the performance of the defect detection model.
+    """
+    def __init__(self, model: DefectDetectionModel):
+        self.model = model
+
+    def evaluate(self, dataloader: DataLoader):
+        """
+        Evaluate the model on a given dataset.
+
+        Args:
+            dataloader (DataLoader): DataLoader containing the evaluation dataset.
+
+        Returns:
+            float: Accuracy of the model on the dataset.
+        """
+        self.model.model.eval()
+        correct = 0
+        total = 0
+        with torch.no_grad():
+            for images, labels in dataloader:
+                images, labels = images.to(self.model.device), labels.to(self.model.device)
+                outputs = self.model.model(images)
+                _, predicted = torch.max(outputs.data, 1)
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
+        accuracy = 100 * correct / total
+        logger.info(f"Model accuracy: {accuracy:.2f}%")
+        return accuracy
+
+# Training Component
+class ModelTrainer:
+    """
+    Component for training the defect detection model.
+    """
+    def __init__(self, model: DefectDetectionModel, criterion, optimizer):
+        self.model = model
+        self.criterion = criterion
+        self.optimizer = optimizer
+
+    def train(self, dataloader: DataLoader, epochs: int):
+        """
+        Train the model on a given dataset.
+
+        Args:
+            dataloader (DataLoader): DataLoader containing the training dataset.
+            epochs (int): Number of epochs to train the model.
+        """
+        self.model.model.train()
+        for epoch in range(epochs):
+            running_loss = 0.0
+            for images, labels in dataloader:
+                images, labels = images.to(self.model.device), labels.to(self.model.device)
+                self.optimizer.zero_grad()
+                outputs = self.model.model(images)
+                loss = self.criterion(outputs, labels)
+                loss.backward()
+                self.optimizer.step()
+                running_loss += loss.item()
+            logger.info(f"Epoch {epoch + 1}, Loss: {running_loss / len(dataloader):.4f}")
