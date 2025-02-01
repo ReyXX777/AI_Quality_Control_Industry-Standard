@@ -62,6 +62,30 @@ def send_notification(message: str):
     except Exception as e:
         logger.error(f"Failed to send notification: {e}")
 
+# New Component: Data Encryption
+def encrypt_data(data: str, key: str) -> str:
+    try:
+        from cryptography.fernet import Fernet
+        cipher_suite = Fernet(key.encode())
+        encrypted_data = cipher_suite.encrypt(data.encode())
+        logger.info("Data encrypted successfully")
+        return encrypted_data.decode()
+    except Exception as e:
+        logger.error(f"Failed to encrypt data: {e}")
+        raise
+
+# New Component: Data Decryption
+def decrypt_data(encrypted_data: str, key: str) -> str:
+    try:
+        from cryptography.fernet import Fernet
+        cipher_suite = Fernet(key.encode())
+        decrypted_data = cipher_suite.decrypt(encrypted_data.encode())
+        logger.info("Data decrypted successfully")
+        return decrypted_data.decode()
+    except Exception as e:
+        logger.error(f"Failed to decrypt data: {e}")
+        raise
+
 # Example usage
 if __name__ == "__main__":
     api_client = APIClient(base_url="https://api.example.com")
@@ -81,9 +105,18 @@ if __name__ == "__main__":
         # Save API response to a file
         save_to_file("user_response.txt", str(response))
 
+        # Encrypt and decrypt data
+        encryption_key = "your-encryption-key-here"
+        encrypted_response = encrypt_data(str(response), encryption_key)
+        print("Encrypted response:", encrypted_response)
+        decrypted_response = decrypt_data(encrypted_response, encryption_key)
+        print("Decrypted response:", decrypted_response)
+
         # Send a notification
         send_notification("User data processed successfully")
     except ValueError as e:
         logger.error(e)
     except requests.exceptions.RequestException as e:
         logger.error(f"API request failed: {e}")
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
