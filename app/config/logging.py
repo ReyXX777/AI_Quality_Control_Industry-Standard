@@ -107,6 +107,44 @@ def get_greeting() -> str:
     else:
         return "Good evening"
 
+# New Component: File Backup
+def backup_file(file_path: str, backup_dir: str):
+    try:
+        if not os.path.exists(backup_dir):
+            os.makedirs(backup_dir)
+        
+        file_name = os.path.basename(file_path)
+        backup_path = os.path.join(backup_dir, file_name)
+        
+        with open(file_path, 'rb') as src_file, open(backup_path, 'wb') as dest_file:
+            dest_file.write(src_file.read())
+        
+        logger = get_logger(__name__)
+        logger.info(f"File {file_name} backed up to {backup_dir}")
+    except Exception as e:
+        logger = get_logger(__name__)
+        logger.error(f"Failed to backup file: {e}")
+
+# New Component: System Information
+def get_system_info() -> dict:
+    try:
+        import platform
+        system_info = {
+            "system": platform.system(),
+            "node": platform.node(),
+            "release": platform.release(),
+            "version": platform.version(),
+            "machine": platform.machine(),
+            "processor": platform.processor(),
+        }
+        logger = get_logger(__name__)
+        logger.info("System information fetched successfully")
+        return system_info
+    except Exception as e:
+        logger = get_logger(__name__)
+        logger.error(f"Failed to fetch system information: {e}")
+        return {}
+
 # Example usage
 if __name__ == "__main__":
     config = load_configuration('config.json')
@@ -117,3 +155,8 @@ if __name__ == "__main__":
     
     greeting = get_greeting()
     print(f"{greeting}! Have a great day.")
+    
+    backup_file('config.json', 'backups')
+    
+    system_info = get_system_info()
+    print(f"System Info: {system_info}")
