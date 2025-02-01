@@ -40,6 +40,37 @@ def send_notification(message: str):
     """Send a notification (e.g., to a logging system or external service)."""
     logger.info(f"Notification: {message}")
 
+# New Component: File Cleanup
+def cleanup_files(directory: str = "uploads", max_files: int = 10):
+    """Clean up old files in the directory to prevent storage overflow."""
+    try:
+        files = os.listdir(directory)
+        if len(files) > max_files:
+            files.sort(key=lambda x: os.path.getmtime(os.path.join(directory, x)))
+            for file in files[:-max_files]:
+                os.remove(os.path.join(directory, file))
+                logger.info(f"Deleted old file: {file}")
+    except Exception as e:
+        logger.error(f"Failed to clean up files: {e}")
+
+# New Component: Prediction Analytics
+def log_analytics(file_name: str, prediction: bool):
+    """Log analytics data for further analysis."""
+    try:
+        analytics_data = {
+            "file_name": file_name,
+            "prediction": prediction,
+            "timestamp": logging.Formatter("%(asctime)s").format(logging.LogRecord(
+                name=__name__, level=logging.INFO, pathname=__file__, lineno=0,
+                msg="", args=(), exc_info=None
+            ))
+        }
+        with open("analytics.log", "a") as analytics_file:
+            analytics_file.write(f"{analytics_data}\n")
+        logger.info(f"Analytics logged for {file_name}")
+    except Exception as e:
+        logger.error(f"Failed to log analytics: {e}")
+
 @router.post("/detect")
 async def detect_defect(file: UploadFile):
     # Validate file type
@@ -57,6 +88,12 @@ async def detect_defect(file: UploadFile):
 
         # Log the prediction
         log_prediction(file.filename, result)
+
+        # Log analytics
+        log_analytics(file.filename, result)
+
+        # Clean up old files
+        cleanup_files()
 
         # Send a notification
         send_notification(f"Defect detection completed for {file.filename}. Result: {result}")
