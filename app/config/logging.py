@@ -145,6 +145,62 @@ def get_system_info() -> dict:
         logger.error(f"Failed to fetch system information: {e}")
         return {}
 
+# New Component: Disk Usage
+def get_disk_usage(path: str) -> dict:
+    try:
+        disk_usage = os.statvfs(path)
+        total_space = disk_usage.f_frsize * disk_usage.f_blocks
+        used_space = total_space - (disk_usage.f_bavail * disk_usage.f_frsize)
+        usage_percentage = (used_space / total_space) * 100
+        disk_info = {
+            "total_space": total_space,
+            "used_space": used_space,
+            "usage_percentage": usage_percentage
+        }
+        logger = get_logger(__name__)
+        logger.info(f"Disk usage fetched for {path}")
+        return disk_info
+    except Exception as e:
+        logger = get_logger(__name__)
+        logger.error(f"Failed to fetch disk usage: {e}")
+        return {}
+
+# New Component: Network Check
+def check_network_connection() -> bool:
+    try:
+        response = requests.get("https://www.google.com", timeout=5)
+        logger = get_logger(__name__)
+        logger.info("Network connection is active")
+        return True
+    except Exception as e:
+        logger = get_logger(__name__)
+        logger.error(f"Network connection check failed: {e}")
+        return False
+
+# New Component: Directory Listing
+def list_directory_contents(directory: str) -> list:
+    try:
+        contents = os.listdir(directory)
+        logger = get_logger(__name__)
+        logger.info(f"Directory contents listed for {directory}")
+        return contents
+    except Exception as e:
+        logger = get_logger(__name__)
+        logger.error(f"Failed to list directory contents: {e}")
+        return []
+
+# New Component: File Size Check
+def get_file_size(file_path: str) -> int:
+    try:
+        size = os.path.getsize(file_path)
+        logger = get_logger(__name__)
+        logger.info(f"File size fetched for {file_path}")
+        return size
+    except Exception as e:
+        logger = get_logger(__name__)
+        logger.error(f"Failed to get file size: {e}")
+        return -1
+
 # Example usage
 if __name__ == "__main__":
     config = load_configuration('config.json')
@@ -160,3 +216,15 @@ if __name__ == "__main__":
     
     system_info = get_system_info()
     print(f"System Info: {system_info}")
+    
+    disk_usage = get_disk_usage('/')
+    print(f"Disk Usage: {disk_usage}")
+    
+    network_status = check_network_connection()
+    print(f"Network Status: {'Connected' if network_status else 'Disconnected'}")
+    
+    directory_contents = list_directory_contents('.')
+    print(f"Directory Contents: {directory_contents}")
+    
+    file_size = get_file_size('config.json')
+    print(f"File Size of config.json: {file_size} bytes")
