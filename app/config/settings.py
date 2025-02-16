@@ -86,6 +86,68 @@ def decrypt_data(encrypted_data: str, key: str) -> str:
         logger.error(f"Failed to decrypt data: {e}")
         raise
 
+# New Component: File Backup
+def backup_file(file_path: str, backup_dir: str):
+    try:
+        if not os.path.exists(backup_dir):
+            os.makedirs(backup_dir)
+        
+        file_name = os.path.basename(file_path)
+        backup_path = os.path.join(backup_dir, file_name)
+        
+        with open(file_path, 'rb') as src_file, open(backup_path, 'wb') as dest_file:
+            dest_file.write(src_file.read())
+        
+        logger.info(f"File {file_name} backed up to {backup_dir}")
+    except Exception as e:
+        logger.error(f"Failed to backup file: {e}")
+
+# New Component: System Information
+def get_system_info() -> dict:
+    try:
+        import platform
+        system_info = {
+            "system": platform.system(),
+            "node": platform.node(),
+            "release": platform.release(),
+            "version": platform.version(),
+            "machine": platform.machine(),
+            "processor": platform.processor(),
+        }
+        logger.info("System information fetched successfully")
+        return system_info
+    except Exception as e:
+        logger.error(f"Failed to fetch system information: {e}")
+        return {}
+
+# New Component: Disk Usage
+def get_disk_usage(path: str) -> dict:
+    try:
+        disk_usage = os.statvfs(path)
+        total_space = disk_usage.f_frsize * disk_usage.f_blocks
+        used_space = total_space - (disk_usage.f_bavail * disk_usage.f_frsize)
+        usage_percentage = (used_space / total_space) * 100
+        disk_info = {
+            "total_space": total_space,
+            "used_space": used_space,
+            "usage_percentage": usage_percentage
+        }
+        logger.info(f"Disk usage fetched for {path}")
+        return disk_info
+    except Exception as e:
+        logger.error(f"Failed to fetch disk usage: {e}")
+        return {}
+
+# New Component: Network Check
+def check_network_connection() -> bool:
+    try:
+        response = requests.get("https://www.google.com", timeout=5)
+        logger.info("Network connection is active")
+        return True
+    except Exception as e:
+        logger.error(f"Network connection check failed: {e}")
+        return False
+
 # Example usage
 if __name__ == "__main__":
     api_client = APIClient(base_url="https://api.example.com")
@@ -111,6 +173,21 @@ if __name__ == "__main__":
         print("Encrypted response:", encrypted_response)
         decrypted_response = decrypt_data(encrypted_response, encryption_key)
         print("Decrypted response:", decrypted_response)
+
+        # Backup file
+        backup_file("user_response.txt", "backups")
+
+        # Get system information
+        system_info = get_system_info()
+        print("System Info:", system_info)
+
+        # Get disk usage
+        disk_usage = get_disk_usage('/')
+        print("Disk Usage:", disk_usage)
+
+        # Check network connection
+        network_status = check_network_connection()
+        print("Network Status:", "Connected" if network_status else "Disconnected")
 
         # Send a notification
         send_notification("User data processed successfully")
