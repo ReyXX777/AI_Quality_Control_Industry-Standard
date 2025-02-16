@@ -71,11 +71,67 @@ def log_analytics(file_name: str, prediction: bool):
     except Exception as e:
         logger.error(f"Failed to log analytics: {e}")
 
+# New Component: File Size Check
+def check_file_size(file: UploadFile, max_size_mb: int = 10) -> bool:
+    """Check if the file size is within the allowed limit."""
+    file.file.seek(0, 2)  # Move to the end of the file
+    file_size = file.file.tell()  # Get the file size in bytes
+    file.file.seek(0)  # Reset file pointer to the beginning
+    max_size_bytes = max_size_mb * 1024 * 1024
+    if file_size > max_size_bytes:
+        logger.warning(f"File {file.filename} exceeds size limit: {file_size} bytes")
+        return False
+    return True
+
+# New Component: File Type Conversion
+def convert_image_format(file_path: str, target_format: str = "png"):
+    """Convert an image file to a specified format."""
+    try:
+        from PIL import Image
+        img = Image.open(file_path)
+        new_file_path = file_path.rsplit(".", 1)[0] + f".{target_format}"
+        img.save(new_file_path, target_format.upper())
+        logger.info(f"File converted to {target_format}: {new_file_path}")
+        return new_file_path
+    except Exception as e:
+        logger.error(f"Failed to convert file format: {e}")
+        return None
+
+# New Component: Batch Processing
+def process_batch_files(files: List[UploadFile]):
+    """Process multiple files in a batch."""
+    results = []
+    for file in files:
+        try:
+            if not validate_file_type(file):
+                logger.warning(f"Skipping invalid file type: {file.filename}")
+                continue
+            if not check_file_size(file):
+                logger.warning(f"Skipping oversized file: {file.filename}")
+                continue
+
+            file_path = save_uploaded_file(file)
+            image_tensor = preprocess_image(file.file.read())
+            prediction = model.predict(image_tensor)
+            result = bool(prediction)
+
+            log_prediction(file.filename, result)
+            log_analytics(file.filename, result)
+            results.append({"file_name": file.filename, "defect_detected": result})
+        except Exception as e:
+            logger.error(f"Error processing file {file.filename}: {e}")
+            results.append({"file_name": file.filename, "error": str(e)})
+    return results
+
 @router.post("/detect")
 async def detect_defect(file: UploadFile):
     # Validate file type
     if not validate_file_type(file):
         raise HTTPException(status_code=400, detail="File type not allowed. Only JPEG, PNG, and JPG are supported.")
+
+    # Validate file size
+    if not check_file_size(file):
+        raise HTTPException(status_code=400, detail="File size exceeds the allowed limit (10MB).")
 
     try:
         # Save the uploaded file
@@ -102,3 +158,12 @@ async def detect_defect(file: UploadFile):
     except Exception as e:
         logger.error(f"Error processing file {file.filename}: {e}")
         raise HTTPException(status_code=500, detail="An error occurred while processing the file.")
+
+@router.post("/batch-detect")
+async def batch_detect_defect(files: List[UploadFile]):
+    try:
+        results = process_batch_files(files)
+        return {"results": results}
+    except Exception as e:
+        logger.error(f"Error during batch processing: {e}")
+        raise HTTPException(status_code=500, detail="An error occurred during batch processing.")
