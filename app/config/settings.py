@@ -148,6 +148,77 @@ def check_network_connection() -> bool:
         logger.error(f"Network connection check failed: {e}")
         return False
 
+# New Component: Data Compression
+def compress_data(data: str, output_file: str):
+    try:
+        import gzip
+        with gzip.open(output_file, 'wb') as f:
+            f.write(data.encode())
+        logger.info(f"Data compressed and saved to {output_file}")
+    except Exception as e:
+        logger.error(f"Failed to compress data: {e}")
+
+# New Component: Data Decompression
+def decompress_data(input_file: str) -> str:
+    try:
+        import gzip
+        with gzip.open(input_file, 'rb') as f:
+            decompressed_data = f.read().decode()
+        logger.info(f"Data decompressed from {input_file}")
+        return decompressed_data
+    except Exception as e:
+        logger.error(f"Failed to decompress data: {e}")
+        raise
+
+# New Component: Process Monitoring
+def monitor_process(process_id: int) -> dict:
+    try:
+        import psutil
+        process = psutil.Process(process_id)
+        process_info = {
+            "pid": process.pid,
+            "name": process.name(),
+            "status": process.status(),
+            "cpu_percent": process.cpu_percent(),
+            "memory_info": process.memory_info()._asdict(),
+        }
+        logger.info(f"Process {process_id} monitored successfully")
+        return process_info
+    except Exception as e:
+        logger.error(f"Failed to monitor process: {e}")
+        return {}
+
+# New Component: Environment Variables Check
+def check_env_vars(required_vars: list) -> dict:
+    try:
+        env_vars = {}
+        for var in required_vars:
+            value = os.getenv(var)
+            if value is None:
+                logger.warning(f"Environment variable {var} is not set")
+            env_vars[var] = value
+        logger.info("Environment variables checked successfully")
+        return env_vars
+    except Exception as e:
+        logger.error(f"Failed to check environment variables: {e}")
+        return {}
+
+# New Component: Directory Cleanup
+def cleanup_directory(directory: str, days_old: int):
+    try:
+        import time
+        current_time = time.time()
+        for filename in os.listdir(directory):
+            file_path = os.path.join(directory, filename)
+            if os.path.isfile(file_path):
+                file_time = os.path.getmtime(file_path)
+                if (current_time - file_time) > (days_old * 86400):
+                    os.remove(file_path)
+                    logger.info(f"Deleted old file: {file_path}")
+        logger.info(f"Directory {directory} cleaned up successfully")
+    except Exception as e:
+        logger.error(f"Failed to cleanup directory: {e}")
+
 # Example usage
 if __name__ == "__main__":
     api_client = APIClient(base_url="https://api.example.com")
@@ -188,6 +259,24 @@ if __name__ == "__main__":
         # Check network connection
         network_status = check_network_connection()
         print("Network Status:", "Connected" if network_status else "Disconnected")
+
+        # Compress data
+        compress_data(str(response), "user_response.gz")
+
+        # Decompress data
+        decompressed_data = decompress_data("user_response.gz")
+        print("Decompressed data:", decompressed_data)
+
+        # Monitor a process (example: current process)
+        process_info = monitor_process(os.getpid())
+        print("Process Info:", process_info)
+
+        # Check environment variables
+        env_vars = check_env_vars(["DATABASE_URL", "LOG_LEVEL"])
+        print("Environment Variables:", env_vars)
+
+        # Cleanup directory
+        cleanup_directory("backups", days_old=7)
 
         # Send a notification
         send_notification("User data processed successfully")
